@@ -256,7 +256,7 @@ public final class DiskLruCache implements Closeable, Flushable {
       }
     }
 
-    //如果不存在，则创建journal
+    //如果不存在，则创建journal,
     rebuildJournal();
 
     initialized = true;
