@@ -24,7 +24,13 @@ import okio.Buffer;
 import okio.BufferedSink;
 import okio.ByteString;
 
-/** An <a href="http://www.ietf.org/rfc/rfc2387.txt">RFC 2387</a>-compliant request body. */
+/** An <a href="http://www.ietf.org/rfc/rfc2387.txt">RFC 2387</a>-compliant request body.
+ *
+ * MultipartBuilder 可以构建复杂的请求体，与HTML文件上传形式兼容。多块请求体中每块请求都是一个请求体，
+ * 可以定义自己的请求头。这些请求头可以用来描述这块请求，例如他的 Content-Disposition 。
+ * 如果 Content-Length 和 Content-Type 可用的话，他们会被自动添加到请求头中。
+ *
+ * */
 public final class MultipartBody extends RequestBody {
   /**
    * The "mixed" subtype of "multipart" is intended for use when the body parts are independent and

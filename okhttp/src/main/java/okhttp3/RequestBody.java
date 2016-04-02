@@ -31,17 +31,23 @@ public abstract class RequestBody {
   /**
    * Returns the number of bytes that will be written to {@code out} in a call to {@link #writeTo},
    * or -1 if that count is unknown.
+   *
+   * 返回这个call上传的长度，-1表示未知。单位是bytes
+   *
    */
   public long contentLength() throws IOException {
     return -1;
   }
 
-  /** Writes the content of this request to {@code out}. */
+  /** Writes the content of this request to {@code out}.
+   * 把变淡内容写入到输出流（？）
+   * */
   public abstract void writeTo(BufferedSink sink) throws IOException;
 
   /**
    * Returns a new request body that transmits {@code content}. If {@code contentType} is non-null
    * and lacks a charset, this will use UTF-8.
+   * 返回一个新的用于传输数据的request body，默认编码utf8
    */
   public static RequestBody create(MediaType contentType, String content) {
     Charset charset = Util.UTF_8;
@@ -98,7 +104,10 @@ public abstract class RequestBody {
     };
   }
 
-  /** Returns a new request body that transmits the content of {@code file}. */
+  /** Returns a new request body that transmits the content of {@code file}.
+   *
+   * 返回一个用于传输文件的 request body
+   * */
   public static RequestBody create(final MediaType contentType, final File file) {
     if (file == null) throw new NullPointerException("content == null");
 

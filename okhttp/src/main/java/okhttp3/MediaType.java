@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 /**
  * An <a href="http://tools.ietf.org/html/rfc2045">RFC 2045</a> Media Type, appropriate to describe
  * the content type of an HTTP request or response body.
+ * 定义媒体类型
  */
 public final class MediaType {
   private static final String TOKEN = "([a-zA-Z0-9-!#$%&'*+.^_`{|}~]+)";

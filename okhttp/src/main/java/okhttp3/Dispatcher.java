@@ -70,6 +70,8 @@ public final class Dispatcher {
    * Set the maximum number of requests to execute concurrently. Above this requests queue in
    * memory, waiting for the running calls to complete.
    *
+   * 设置最大可以同时请求的数量，如果超过了这个数量，这些超过的请求将会等待正在进行的请求执行完，再执行。
+   *
    * <p>If more than {@code maxRequests} requests are in flight when this is invoked, those requests
    * will remain in flight.
    */

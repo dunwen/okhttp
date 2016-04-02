@@ -75,6 +75,9 @@ public final class FormBody extends RequestBody {
    * do double-duty to make sure the counting and content are consistent, particularly when it comes
    * to awkward operations like measuring the encoded length of header strings, or the
    * length-in-digits of an encoded integer.
+   *
+   * 这个函数的行为决定于countBytes传入的值，如果是true，那么只统计内容长度（content length）而不写入输出流，否则，写入输出流
+   *
    */
   private long writeOrCountBytes(BufferedSink sink, boolean countBytes) {
     long byteCount = 0L;
@@ -105,12 +108,18 @@ public final class FormBody extends RequestBody {
     private final List<String> names = new ArrayList<>();
     private final List<String> values = new ArrayList<>();
 
+    /**
+     * 添加表单数据，这些数据都是未编码的
+     * */
     public Builder add(String name, String value) {
       names.add(HttpUrl.canonicalize(name, FORM_ENCODE_SET, false, false, true, true));
       values.add(HttpUrl.canonicalize(value, FORM_ENCODE_SET, false, false, true, true));
       return this;
     }
 
+    /**
+     * 添加已经编码了的表单数据
+     * */
     public Builder addEncoded(String name, String value) {
       names.add(HttpUrl.canonicalize(name, FORM_ENCODE_SET, true, false, true, true));
       values.add(HttpUrl.canonicalize(value, FORM_ENCODE_SET, true, false, true, true));

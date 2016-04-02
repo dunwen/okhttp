@@ -532,6 +532,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
 
     /**
      * Sets the DNS service used to lookup IP addresses for hostnames.
+     * 设置dns服务
      *
      * <p>If unset, the {@link Dns#SYSTEM system-wide default} DNS will be used.
      */
@@ -631,6 +632,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
      * Sets the certificate pinner that constrains which certificates are trusted. By default HTTPS
      * connections rely on only the {@link #sslSocketFactory SSL socket factory} to establish trust.
      * Pinning certificates avoids the need to trust certificate authorities.
+     *
      */
     public Builder certificatePinner(CertificatePinner certificatePinner) {
       if (certificatePinner == null) throw new NullPointerException("certificatePinner == null");
@@ -654,6 +656,12 @@ public class OkHttpClient implements Cloneable, Call.Factory {
      * Sets the authenticator used to respond to challenges from proxy servers. Use {@link
      * #authenticator} to set the authenticator for origin servers.
      *
+     * 这个header没见过。。干嘛用的。。。
+     *
+     * OkHttp会自动重试未验证的请求。当响应是401 Not Authorized时，
+     * Authenticator会被要求提供证书。Authenticator的实现中需要建立一个新的包含证书的请求。
+     * 如果没有证书可用，返回null来跳过尝试
+     *
      * <p>If unset, the {@linkplain Authenticator#NONE no authentication will be attempted}.
      */
     public Builder proxyAuthenticator(Authenticator proxyAuthenticator) {
@@ -664,6 +672,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
 
     /**
      * Sets the connection pool used to recycle HTTP and HTTPS connections.
+     *设置连接池
      *
      * <p>If unset, a new connection pool will be used.
      */
@@ -676,6 +685,9 @@ public class OkHttpClient implements Cloneable, Call.Factory {
     /**
      * Configure this client to follow redirects from HTTPS to HTTP and from HTTP to HTTPS.
      *
+     * 设置是否可以从https重定向到http或者http重定向到https
+     *
+     *
      * <p>If unset, protocol redirects will be followed. This is different than the built-in {@code
      * HttpURLConnection}'s default.
      */
@@ -684,7 +696,9 @@ public class OkHttpClient implements Cloneable, Call.Factory {
       return this;
     }
 
-    /** Configure this client to follow redirects. If unset, redirects be followed. */
+    /** Configure this client to follow redirects. If unset, redirects be followed.
+     * easy，设置重定向，跟httpurlconnection那个一样
+     * */
     public Builder followRedirects(boolean followRedirects) {
       this.followRedirects = followRedirects;
       return this;
@@ -693,7 +707,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
     /**
      * Configure this client to retry or not when a connectivity problem is encountered. By default,
      * this client silently recovers from the following problems:
-     *
+     * 当一个链接有异常发生的时候，设置是否重新尝试
      * <ul>
      *   <li><strong>Unreachable IP addresses.</strong> If the URL's host has multiple IP addresses,
      *       failure to reach any individual IP address doesn't fail the overall request. This can
@@ -715,6 +729,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
 
     /**
      * Sets the dispatcher used to set policy and execute asynchronous requests. Must not be null.
+     * 设置一个调度去代理和执行异步请求。
      */
     public Builder dispatcher(Dispatcher dispatcher) {
       if (dispatcher == null) throw new IllegalArgumentException("dispatcher == null");
@@ -750,6 +765,9 @@ public class OkHttpClient implements Cloneable, Call.Factory {
      *
      * @param protocols the protocols to use, in order of preference. The list must contain {@link
      * Protocol#HTTP_1_1}. It must not contain null or {@link Protocol#HTTP_1_0}.
+     *
+     *                  设置协议什么的
+     *
      */
     public Builder protocols(List<Protocol> protocols) {
       protocols = Util.immutableList(protocols);

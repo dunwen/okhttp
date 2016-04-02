@@ -14,6 +14,8 @@ public final class CacheControl {
   /**
    * Cache control request directives that require network validation of responses. Note that such
    * requests may be assisted by the cache via conditional GET requests.
+   * 强制使用网络获取数据而不使用缓存
+   *
    */
   public static final CacheControl FORCE_NETWORK = new Builder().noCache().build();
 
@@ -21,6 +23,8 @@ public final class CacheControl {
    * Cache control request directives that uses the cache only, even if the cached response is
    * stale. If the response isn't available in the cache or requires server validation, the call
    * will fail with a {@code 504 Unsatisfiable Request}.
+   * 强制使用通过缓存获得数据而不通过网络，但是有的时候必须从网络才能获取数据的（就是说某个url木有缓存），那么就会抛出504
+   *
    */
   public static final CacheControl FORCE_CACHE = new Builder()
       .onlyIfCached()
