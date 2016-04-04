@@ -33,6 +33,9 @@ import okhttp3.internal.RouteDatabase;
 /**
  * Selects routes to connect to an origin server. Each connection requires a choice of proxy server,
  * IP address, and TLS mode. Connections may also be recycled.
+ *
+ * 选择一个路由以便链接目标服务器
+ *
  */
 public final class RouteSelector {
   private final Address address;
@@ -170,9 +173,11 @@ public final class RouteSelector {
       inetSocketAddresses.add(InetSocketAddress.createUnresolved(socketHost, socketPort));
     } else {
       // Try each address for best behavior in mixed IPv4/IPv6 environments.
+      //通过DNS（默认是Dns.SYSTEM,就是调用了InetAddress.getAllByName("www.baidu.com");，包装了jdk自带的lookup函数）查询，并保存结果，注意结果是数组，即一个域名有多个IP，这就是自动重连的来源
       List<InetAddress> addresses = address.dns().lookup(socketHost);
       for (int i = 0, size = addresses.size(); i < size; i++) {
         InetAddress inetAddress = addresses.get(i);
+        //封装好socket的地址和端口号，保存它
         inetSocketAddresses.add(new InetSocketAddress(inetAddress, socketPort));
       }
     }

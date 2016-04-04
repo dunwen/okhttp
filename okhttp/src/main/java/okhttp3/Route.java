@@ -22,7 +22,8 @@ import java.net.Proxy;
  * The concrete route used by a connection to reach an abstract origin server. When creating a
  * connection the client has many options:
  *
- * <ul>
+ *
+ *  <ul>
  *     <li><strong>HTTP proxy:</strong> a proxy server may be explicitly configured for the client.
  *         Otherwise the {@linkplain java.net.ProxySelector proxy selector} is used. It may return
  *         multiple proxies to attempt.
@@ -32,10 +33,14 @@ import java.net.Proxy;
  * </ul>
  *
  * <p>Each route is a specific selection of these options.
+ *
+ *
  */
 public final class Route {
   final Address address;
   final Proxy proxy;
+
+  //这个类封装了socket的地址（ip地址）和端口号
   final InetSocketAddress inetSocketAddress;
 
   public Route(Address address, Proxy proxy, InetSocketAddress inetSocketAddress) {

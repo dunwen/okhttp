@@ -33,6 +33,9 @@ import okhttp3.internal.io.RealConnection;
 /**
  * Escalate internal APIs in {@code okhttp3} so they can be used from OkHttp's implementation
  * packages. The only implementation of this interface is in {@link OkHttpClient}.
+ *
+ * 为什么需要这么多此一举的分层包装，主要是为了让外部包的成员访问非public方法
+ *
  */
 public abstract class Internal {
   public static final Logger logger = Logger.getLogger(OkHttpClient.class.getName());

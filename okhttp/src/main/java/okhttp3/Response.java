@@ -66,6 +66,8 @@ public final class Response {
    * The wire-level request that initiated this HTTP response. This is not
    * necessarily the same request issued by the application:
    *
+   * 获得这个response的 线路层（链路层？）的请求，跟我们应用创建的请求是木有必要一样的
+   *
    * <ul>
    *     <li>It may be transformed by the HTTP client. For example, the client
    *         may copy headers like {@code Content-Length} from the request body.
@@ -80,12 +82,15 @@ public final class Response {
 
   /**
    * Returns the HTTP protocol, such as {@link Protocol#HTTP_1_1} or {@link Protocol#HTTP_1_0}.
+   * 返回http协议
    */
   public Protocol protocol() {
     return protocol;
   }
 
-  /** Returns the HTTP status code. */
+  /** Returns the HTTP status code.
+   * 返回http状态码
+   * */
   public int code() {
     return code;
   }
@@ -184,6 +189,9 @@ public final class Response {
    * Returns the raw response received from the network. Will be null if this response didn't use
    * the network, such as when the response is fully cached. The body of the returned response
    * should not be read.
+   *
+   * 返回网络请求的响应，如果木有经过网络请求而使用了缓存的话，这个方法返回null
+   *
    */
   public Response networkResponse() {
     return networkResponse;
@@ -193,6 +201,8 @@ public final class Response {
    * Returns the raw response received from the cache. Will be null if this response didn't use the
    * cache. For conditional get requests the cache response and network response may both be
    * non-null. The body of the returned response should not be read.
+   *
+   * 返回来自缓存的响应，如果木有经过缓存而使用了网络的话，这个方法返回null
    */
   public Response cacheResponse() {
     return cacheResponse;

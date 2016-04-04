@@ -68,6 +68,8 @@ public class OkHttpClient implements Cloneable, Call.Factory {
   private static final List<ConnectionSpec> DEFAULT_CONNECTION_SPECS = Util.immutableList(
       ConnectionSpec.MODERN_TLS, ConnectionSpec.COMPATIBLE_TLS, ConnectionSpec.CLEARTEXT);
 
+
+  //为什么需要这么多此一举的分层包装，主要是为了让外部包的成员访问非public方法
   static {
     Internal.instance = new Internal() {
       @Override public void addLenient(Headers.Builder builder, String line) {

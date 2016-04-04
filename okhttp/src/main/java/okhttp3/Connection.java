@@ -19,6 +19,9 @@ package okhttp3;
 import java.net.Socket;
 
 /**
+ *
+ * 对JDK中的socket进行了封装，用来控制socket连接
+ *
  * The sockets and streams of an HTTP, HTTPS, or HTTPS+SPDY connection. May be used for multiple
  * HTTP request/response exchanges. Connections may be direct to the origin server or via a proxy.
  *

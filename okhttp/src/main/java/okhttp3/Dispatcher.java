@@ -31,24 +31,42 @@ import okhttp3.internal.Util;
 /**
  * Policy on when async requests are executed.
  *
+ * 请求执行的代理
+ *
  * <p>Each dispatcher uses an {@link ExecutorService} to run calls internally. If you supply your
  * own executor, it should be able to run {@linkplain #getMaxRequests the configured maximum} number
  * of calls concurrently.
+ *
+ * 每个dispatcher使用一个线程池去执行每一个call，
+ *
  */
 public final class Dispatcher {
   private int maxRequests = 64;
   private int maxRequestsPerHost = 5;
 
-  /** Executes calls. Created lazily. */
+  /** Executes calls. Created lazily.
+   *
+   * 执行call的线程池，这玩意的构造是懒加载模式
+   *
+   * */
   private ExecutorService executorService;
 
-  /** Ready async calls in the order they'll be run. */
+  /** Ready async calls in the order they'll be run.
+   *
+   * 准备执行的call将会在这个队列里面按顺序实行
+   *
+   * */
   private final Deque<AsyncCall> readyAsyncCalls = new ArrayDeque<>();
 
-  /** Running asynchronous calls. Includes canceled calls that haven't finished yet. */
+  /** Running asynchronous calls. Includes canceled calls that haven't finished yet.
+   *
+   * 正在执行的异步call，包括还没运行完的取消掉的call
+   * */
   private final Deque<AsyncCall> runningAsyncCalls = new ArrayDeque<>();
 
-  /** Running synchronous calls. Includes canceled calls that haven't finished yet. */
+  /** Running synchronous calls. Includes canceled calls that haven't finished yet.
+   * 正在执行的同步call
+   * */
   private final Deque<RealCall> runningSyncCalls = new ArrayDeque<>();
 
   public Dispatcher(ExecutorService executorService) {
@@ -158,7 +176,9 @@ public final class Dispatcher {
     }
   }
 
-  /** Returns the number of running calls that share a host with {@code call}. */
+  /** Returns the number of running calls that share a host with {@code call}.
+   * 返回一个共享一个主机的call的数量
+   * */
   private int runningCallsForHost(AsyncCall call) {
     int result = 0;
     for (AsyncCall c : runningAsyncCalls) {

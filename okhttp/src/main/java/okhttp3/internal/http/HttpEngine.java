@@ -75,8 +75,16 @@ import static okhttp3.internal.http.StatusLine.HTTP_TEMP_REDIRECT;
  * the response has been read the response headers and body can be read. All responses have a
  * response body input stream, though in some instances this stream is empty. </ol>
  *
+ * 操控一对http请求，响应的过程。每个http engine 遵守如下的生命周期
+ *  ~被创建
+ *  ~使用sendRequest()方法发送一个请求消息。一旦请求被发送，那么修改请求头是错误的做法。在调用sendRequest()后，如果request body存在的话那么这个request body就可以被写入
+ *  ~使用readResponse()读取一个响应message。
+ *
  * <p>The request and response may be served by the HTTP response cache, by the network, or by both
  * in the event of a conditional GET.
+ *
+ * 请求和响应的行为受http缓存，网络，或者这两个同时都有影响
+ *
  */
 public final class HttpEngine {
   /**
@@ -111,6 +119,8 @@ public final class HttpEngine {
   /**
    * True if this client added an "Accept-Encoding: gzip" header field and is therefore responsible
    * for also decompressing the transfer stream.
+   * true ； 客户端加了 "Accept-Encoding: gzip" 这个请求头，这样做就减少网络输入输出（因为被压缩了嘛）
+   *
    */
   private boolean transparentGzip;
 
@@ -118,18 +128,31 @@ public final class HttpEngine {
    * True if the request body must be completely buffered before transmission; false if it can be
    * streamed. Buffering has two advantages: we don't need the content-length in advance and we can
    * retransmit if necessary. The upside of streaming is that we can save memory.
+   *
+   * true : request body 必须在传输之前完全的（缓冲？）
+   * false ： request body 以流的形式存在
+   *
+   * 缓冲有两点有点，我们不需要预先知道content-length和我们可以在需要的时候重传request body
+   * 以流的形式存在可以节约内存
    */
   public final boolean bufferRequestBody;
 
   /**
    * The original application-provided request. Never modified by OkHttp. When follow-up requests
    * are necessary, they are derived from this request.
+   *
+   * 原始应用提供的请求。这个请求从木有被oktthp加工过，当请求有需要的时候（意思是在发送我们自己定义的请求之前，还有okhttp加工过的请求咯，如果okhttp加工
+   * 的请求有问题，就发送这个请求？），最终的结果来源于这个请求
+   *
    */
   private final Request userRequest;
 
   /**
    * The request to send on the network, or null for no network request. This is derived from the
    * user request, and customized to support OkHttp features like compression and caching.
+   *
+   * 发送到网络上的请求，这个请求来源于应用定义的request，一般情况下，这个请求符合okhttp的特殊，比如压缩和缓存。
+   *
    */
   private Request networkRequest;
 
@@ -137,12 +160,18 @@ public final class HttpEngine {
    * The cached response, or null if the cache doesn't exist or cannot be used for this request.
    * Conditional caching means this may be non-null even when the network request is non-null. Never
    * modified by OkHttp.
+   *
+   * 缓存的响应，在缓存不存在或者不能被当前请求使用（缓存过期），那么就为null。
+   *
    */
   private Response cacheResponse;
 
   /**
    * The user-visible response. This is derived from either the network response, cache response, or
    * both. It is customized to support OkHttp features like compression and caching.
+   *
+   * 对于用户来说可见的响应
+   *
    */
   private Response userResponse;
 
@@ -181,6 +210,9 @@ public final class HttpEngine {
    * Figures out what the response source will be, and opens a socket to that source if necessary.
    * Prepares the request headers and gets ready to start writing the request body if it exists.
    *
+   * 算出response的source将会是什么，如果有必要，打开socket端口
+   * 准备好request的header，如果request body存在的话，还要准备把请求参数写入request body
+   *
    * @throws RequestException if there was a problem with request setup. Unrecoverable.
    * @throws RouteException if the was a problem during connection via a specific route. Sometimes
    * recoverable. See {@link #recover}.
@@ -191,9 +223,14 @@ public final class HttpEngine {
     if (cacheStrategy != null) return; // Already sent.
     if (httpStream != null) throw new IllegalStateException();
 
+    //此处对request进行了一次额外封装，增加了几个常用的请求头，使用cookiejar，往请求里面增加cookie 等等
     Request request = networkRequest(userRequest);
 
+
+    //Internal.instance 在okhttpClient 的static块里面已经初始化过了
     InternalCache responseCache = Internal.instance.internalCache(client);
+
+   //设置了cache这个返回就不是null了
     Response cacheCandidate = responseCache != null
         ? responseCache.get(request)
         : null;
@@ -212,6 +249,7 @@ public final class HttpEngine {
     }
 
     // If we're forbidden from using the network and the cache is insufficient, fail.
+    //同时禁止网络和缓存 request.cacheControl() 将会抛出504错误
     if (networkRequest == null && cacheResponse == null) {
       userResponse = new Response.Builder()
           .request(userRequest)
@@ -225,6 +263,7 @@ public final class HttpEngine {
     }
 
     // If we don't need the network, we're done.
+    //如果不需要网络，那么久直接返回缓存结果
     if (networkRequest == null) {
       userResponse = cacheResponse.newBuilder()
           .request(userRequest)
@@ -236,6 +275,12 @@ public final class HttpEngine {
     }
 
     // We need the network to satisfy this request. Possibly for validating a conditional GET.
+    //现在需要通过网络完成这个请求，也许只是验证一个conditional GET
+
+
+    //conditional GET:客户端向服务器发送一个包询问是否在上一次访问网站的时间后是否更改了页面，如果服务器没有更新，
+    // 显然不需要把整个网页传给客户端，客户端只要使用本地缓存即可，
+    // 如果服务器对照客户端给出的时间已经更新了客户端请求的网页，则发送这个更新了的网页给用户。
     boolean success = false;
     try {
       httpStream = connect();

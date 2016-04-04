@@ -37,6 +37,11 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * This class coordinates the relationship between three entities:
+
+ * 这个类协调了下列3个玩意的关系
+ * Connections: 对JDK中的socket进行了封装，用来控制socket连接
+ * Streams: 维护HTTP的流，用来对Requset/Response进行IO操作
+ * Calls: HTTP请求任务封装
  *
  * <ul>
  *     <li><strong>Connections:</strong> physical socket connections to remote servers. These are
@@ -75,6 +80,10 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public final class StreamAllocation {
   public final Address address;
   private Route route;
+
+  /**
+  * 这个字段是实例化的时候传入的httpClient所持有的connection池
+  * */
   private final ConnectionPool connectionPool;
 
   // State guarded by connectionPool.
@@ -91,9 +100,10 @@ public final class StreamAllocation {
   }
 
   public HttpStream newStream(int connectTimeout, int readTimeout, int writeTimeout,
-      boolean connectionRetryEnabled, boolean doExtensiveHealthChecks)
+      boolean connectionRetryEnabled,/*GET 方法为false，否则为true*/ boolean doExtensiveHealthChecks)
       throws RouteException, IOException {
     try {
+      //从connectionPool中找到一个空闲的connection
       RealConnection resultConnection = findHealthyConnection(connectTimeout, readTimeout,
           writeTimeout, connectionRetryEnabled, doExtensiveHealthChecks);
 
@@ -119,6 +129,9 @@ public final class StreamAllocation {
   /**
    * Finds a connection and returns it if it is healthy. If it is unhealthy the process is repeated
    * until a healthy connection is found.
+   *
+   * 找到一个空闲的connection（socket的封装）并返回它，如果一直木有connection事空闲的，那么将一直等待某个connection空闲下来
+   *
    */
   private RealConnection findHealthyConnection(int connectTimeout, int readTimeout,
       int writeTimeout, boolean connectionRetryEnabled, boolean doExtensiveHealthChecks)
@@ -161,6 +174,7 @@ public final class StreamAllocation {
       }
 
       // Attempt to get a connection from the pool.
+      //企图从池中获取一个空闲的connection
       RealConnection pooledConnection = Internal.instance.get(connectionPool, address, this);
       if (pooledConnection != null) {
         this.connection = pooledConnection;
@@ -171,6 +185,10 @@ public final class StreamAllocation {
     }
 
     if (selectedRoute == null) {
+
+
+      //选择一个路由，返回来的实例里面包含了目标主机的ip地址和端口号，代理，还有原始的封装在streamAllocation里面的Address实例
+      //现在有了目标主机的ip地址和端口号，那么就可以进行tcp握手了
       selectedRoute = routeSelector.next();
       synchronized (connectionPool) {
         route = selectedRoute;

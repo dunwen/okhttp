@@ -32,6 +32,9 @@ import static okhttp3.internal.Util.equal;
  * connections the address also includes the SSL socket factory, hostname verifier, and certificate
  * pinner.
  *
+ * 链接到一个服务器的链接的封装，一般来说，只要主机名和端口号相同，这个address就相同，
+ * 相同的address共享一个connection
+ *
  * <p>HTTP requests that share the same {@code Address} may also share the same {@link Connection}.
  */
 public final class Address {

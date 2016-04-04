@@ -47,13 +47,17 @@ final class RealCall implements Call {
     return originalRequest;
   }
 
+
+  /**
+   * 同步请求
+   * */
   @Override public Response execute() throws IOException {
     synchronized (this) {
       if (executed) throw new IllegalStateException("Already Executed");
       executed = true;
     }
     try {
-      client.dispatcher().executed(this);
+      client.dispatcher().executed(this);//这个方法单纯的把当前的call加入队列
       Response result = getResponseWithInterceptorChain(false);
       if (result == null) throw new IOException("Canceled");
       return result;
@@ -181,6 +185,8 @@ final class RealCall implements Call {
 
     @Override public Response proceed(Request request) throws IOException {
       // If there's another interceptor in the chain, call that.
+      //如果在client里面add了一个拦截器（这个拦截器记得调用China.process方法，不然就木有response返回了），那么就调用那个拦截器
+      //但是如果我设置了多个拦截器呢？只会执行一个？
       if (index < client.interceptors().size()) {
         Interceptor.Chain chain = new ApplicationInterceptorChain(index + 1, request, forWebSocket);
         Interceptor interceptor = client.interceptors().get(index);
@@ -201,6 +207,7 @@ final class RealCall implements Call {
 
   /**
    * Performs the request and returns the response. May return null if this call was canceled.
+   * 执行请求并返回响应，如果call被取消了，那么返回null
    */
   Response getResponse(Request request, boolean forWebSocket) throws IOException {
     // Copy body metadata to the appropriate request headers.
@@ -226,6 +233,7 @@ final class RealCall implements Call {
     }
 
     // Create the initial HTTP engine. Retries and redirects need new engine for each attempt.
+    //
     engine = new HttpEngine(client, request, false, false, forWebSocket, null, null, null);
 
     int followUpCount = 0;

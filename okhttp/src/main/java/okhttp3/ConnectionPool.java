@@ -38,12 +38,33 @@ import static okhttp3.internal.Util.closeQuietly;
  * Manages reuse of HTTP and SPDY connections for reduced network latency. HTTP requests that share
  * the same {@link Address} may share a {@link Connection}. This class implements the policy of
  * which connections to keep open for future use.
+ *
+ * http://upload-images.jianshu.io/upload_images/98641-71b1fdaf78b8442c.png?imageMogr2/auto-orient/strip|imageView2/2/w/1240这个图很好的解释了这个类想要做的事情
+ * 通常我们进行http连接时，首先进行tcp握手，然后传输数据，最后释放
+ *
+ * 这种方法的确简单，但是在复杂的网络内容中就不够用了，创建socket需要进行3次握手，
+ * 而释放socket需要2次握手(或者是4次)。重复的连接与释放tcp连接就像每次仅仅挤1mm的牙膏就合上牙膏盖子接着再打开接着挤一样。
+ * 而每次连接大概是TTL一次的时间(也就是ping一次)，甚至在TLS环境下消耗的时间就更多了。
+ * 很明显，当访问复杂网络时，延时（而不是带宽）将成为非常重要的因素。
+
+ 当然，上面的问题早已经解决了，在http中有一种叫做keepalive connections的机制，
+ 它可以在传输数据后仍然保持连接，当客户端需要再次获取数据时，
+ 直接使用刚刚空闲下来的连接而不需要再次握手
+ 原文链接：http://www.jianshu.com/p/92a61357164b
+
+
+ 因此，okhttp提供了默认5个并发connection，每个connection最多空闲5分钟就被关闭
+ *
  */
 public final class ConnectionPool {
   /**
    * Background threads are used to cleanup expired connections. There will be at most a single
    * thread running per connection pool. The thread pool executor permits the pool itself to be
    * garbage collected.
+   *
+   *
+   * 用来清除无用的connection（就是socket）
+   *
    */
   private static final Executor executor = new ThreadPoolExecutor(0 /* corePoolSize */,
       Integer.MAX_VALUE /* maximumPoolSize */, 60L /* keepAliveTime */, TimeUnit.SECONDS,

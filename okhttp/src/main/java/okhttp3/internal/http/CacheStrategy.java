@@ -38,6 +38,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Given a request and cached response, this figures out whether to use the network, the cache, or
  * both.
  *
+ * 这个类确定是否使用网络还是缓存还是两者都使用
+ *
  * <p>Selecting a cache strategy may add conditions to the request (like the "If-Modified-Since"
  * header for conditional GETs) or warnings to the cached response (if the cached data is
  * potentially stale).
