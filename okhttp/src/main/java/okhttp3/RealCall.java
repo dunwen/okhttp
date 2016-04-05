@@ -58,6 +58,8 @@ final class RealCall implements Call {
     }
     try {
       client.dispatcher().executed(this);//这个方法单纯的把当前的call加入队列
+
+      //那么请重点关注这里，这里完成了整个网络的所有逻辑
       Response result = getResponseWithInterceptorChain(false);
       if (result == null) throw new IOException("Canceled");
       return result;
@@ -161,6 +163,7 @@ final class RealCall implements Call {
 
   private Response getResponseWithInterceptorChain(boolean forWebSocket) throws IOException {
     Interceptor.Chain chain = new ApplicationInterceptorChain(0, originalRequest, forWebSocket);
+    //跟进这里
     return chain.proceed(originalRequest);
   }
 
@@ -201,6 +204,8 @@ final class RealCall implements Call {
       }
 
       // No more interceptors. Do HTTP.
+
+      //这里执行http
       return getResponse(request, forWebSocket);
     }
   }
@@ -233,7 +238,6 @@ final class RealCall implements Call {
     }
 
     // Create the initial HTTP engine. Retries and redirects need new engine for each attempt.
-    //
     engine = new HttpEngine(client, request, false, false, forWebSocket, null, null, null);
 
     int followUpCount = 0;
@@ -245,7 +249,13 @@ final class RealCall implements Call {
 
       boolean releaseConnection = true;
       try {
+        //0.对request进行了一次额外封装，增加了几个常用的请求头，使用cookiejar，往请求里面增加cookie 等等
+        //1.判断是否只使用缓存，若是，直接设置结果，否则，进行下一步网络请求
+        //2.现在需要通过网络完成这个请求，但是也有可能也许只是验证一个conditional GET，反正就是正规的网络请求开始
+        //3.重点关注connect();逻辑
         engine.sendRequest();
+
+
         engine.readResponse();
         releaseConnection = false;
       } catch (RequestException e) {
@@ -283,6 +293,7 @@ final class RealCall implements Call {
       Response response = engine.getResponse();
       Request followUp = engine.followUpRequest();
 
+      //如果链接没有需要继续跟下去的请求，那么就返回这个response了。到这里，整个请求完成。
       if (followUp == null) {
         if (!forWebSocket) {
           engine.releaseStreamAllocation();
@@ -290,6 +301,8 @@ final class RealCall implements Call {
         return response;
       }
 
+
+      //以下如果还有下一级请求，那么根据下一级请求，继续循环
       StreamAllocation streamAllocation = engine.close();
 
       if (++followUpCount > MAX_FOLLOW_UPS) {

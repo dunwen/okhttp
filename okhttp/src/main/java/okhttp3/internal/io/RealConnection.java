@@ -105,9 +105,10 @@ public final class RealConnection extends FramedConnection.Listener implements C
 
     while (protocol == null) {
       try {
+
         rawSocket = proxy.type() == Proxy.Type.DIRECT || proxy.type() == Proxy.Type.HTTP
-            ? address.socketFactory().createSocket()
-            : new Socket(proxy);
+            ? address.socketFactory().createSocket()//调用系统api获得一个默认的socket
+            : new Socket(proxy);//否则，自己创建
         connectSocket(connectTimeout, readTimeout, writeTimeout, connectionSpecSelector);
       } catch (IOException e) {
         closeQuietly(socket);
@@ -137,13 +138,18 @@ public final class RealConnection extends FramedConnection.Listener implements C
       ConnectionSpecSelector connectionSpecSelector) throws IOException {
     rawSocket.setSoTimeout(readTimeout);
     try {
+
+      //根据选择的路线(Route),选择当前平台Runtime下最好的socket库进行握手
       Platform.get().connectSocket(rawSocket, route.socketAddress(), connectTimeout);
     } catch (ConnectException e) {
       throw new ConnectException("Failed to connect to " + route.socketAddress());
     }
+
+    //通过okio，与远程主机建立了io链接
     source = Okio.buffer(Okio.source(rawSocket));
     sink = Okio.buffer(Okio.sink(rawSocket));
 
+    //如果存在TLS，就根据SSL版本与证书进行安全握手
     if (route.address().sslSocketFactory() != null) {
       connectTls(readTimeout, writeTimeout, connectionSpecSelector);
     } else {
@@ -154,6 +160,7 @@ public final class RealConnection extends FramedConnection.Listener implements C
     if (protocol == Protocol.SPDY_3 || protocol == Protocol.HTTP_2) {
       socket.setSoTimeout(0); // Framed connection timeouts are set per-stream.
 
+      //这个类持有了socket与它的输入流和输出流以及端口号，
       FramedConnection framedConnection = new FramedConnection.Builder(true)
           .socket(socket, route.address().url().host(), source, sink)
           .protocol(protocol)

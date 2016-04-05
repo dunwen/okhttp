@@ -47,10 +47,15 @@ import static okhttp3.internal.framed.Settings.DEFAULT_INITIAL_WINDOW_SIZE;
  * A socket connection to a remote peer. A connection hosts streams which can send and receive
  * data.
  *
+ *
  * <p>Many methods in this API are <strong>synchronous:</strong> the call is completed before the
  * method returns. This is typical for Java but atypical for SPDY. This is motivated by exception
  * transparency: an IOException that was triggered by a certain caller can be caught and handled by
  * that caller.
+ *
+ * 很多api方法在这个类里面都是同步的，
+ * 这个类持有了socket与它的输入流和输出流以及端口号
+ *
  */
 public final class FramedConnection implements Closeable {
 

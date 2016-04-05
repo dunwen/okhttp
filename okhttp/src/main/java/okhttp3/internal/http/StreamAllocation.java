@@ -130,7 +130,8 @@ public final class StreamAllocation {
    * Finds a connection and returns it if it is healthy. If it is unhealthy the process is repeated
    * until a healthy connection is found.
    *
-   * 找到一个空闲的connection（socket的封装）并返回它，如果一直木有connection事空闲的，那么将一直等待某个connection空闲下来
+   * 找到一个健康的connection（socket的封装）并返回它
+   * 怎么才算是健康的呢，就是没有进行使用的connection呗
    *
    */
   private RealConnection findHealthyConnection(int connectTimeout, int readTimeout,
@@ -180,15 +181,11 @@ public final class StreamAllocation {
         this.connection = pooledConnection;
         return pooledConnection;
       }
-
       selectedRoute = route;
     }
 
     if (selectedRoute == null) {
-
-
       //选择一个路由，返回来的实例里面包含了目标主机的ip地址和端口号，代理，还有原始的封装在streamAllocation里面的Address实例
-      //现在有了目标主机的ip地址和端口号，那么就可以进行tcp握手了
       selectedRoute = routeSelector.next();
       synchronized (connectionPool) {
         route = selectedRoute;
@@ -203,6 +200,7 @@ public final class StreamAllocation {
       if (canceled) throw new IOException("Canceled");
     }
 
+    //刚刚获取到了路由，路由里面有目标主机的ip地址和端口号，所以这里开始创建socket，并开始握手
     newConnection.connect(connectTimeout, readTimeout, writeTimeout, address.connectionSpecs(),
         connectionRetryEnabled);
     routeDatabase().connected(newConnection.route());

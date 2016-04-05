@@ -107,6 +107,8 @@ public final class Http1xStream implements HttpStream {
   /**
    * Prepares the HTTP headers and sends them to the server.
    *
+   * 通过RequestLine，Requst，HttpEngine，Header等参数进行序列化操作，也就是拼装参数为socketRaw数据。拼装方法也比较暴力，直接按照RFC协议要求的格式进行concat输出就实现
+   *
    * <p>For streaming requests with a body, headers must be prepared <strong>before</strong> the
    * output stream has been written to. Otherwise the body would need to be buffered!
    *
@@ -181,13 +183,14 @@ public final class Http1xStream implements HttpStream {
 
     try {
       while (true) {
+        //读取了第一行，正常情况下就退出循环了、
+        //读取了第一行，代表了http返回状态，封装成了statusLine
         StatusLine statusLine = StatusLine.parse(source.readUtf8LineStrict());
-
         Response.Builder responseBuilder = new Response.Builder()
             .protocol(statusLine.protocol)
             .code(statusLine.code)
             .message(statusLine.message)
-            .headers(readHeaders());
+            .headers(readHeaders());//在此处读取了response的header
 
         if (statusLine.code != HTTP_CONTINUE) {
           state = STATE_OPEN_RESPONSE_BODY;

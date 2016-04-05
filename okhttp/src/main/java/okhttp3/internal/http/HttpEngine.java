@@ -191,8 +191,8 @@ public final class HttpEngine {
    * where control flow is returned to the calling application to write the request body before the
    * response body is readable.
    */
-  public HttpEngine(OkHttpClient client, Request request, boolean bufferRequestBody,
-      boolean callerWritesRequestBody, boolean forWebSocket, StreamAllocation streamAllocation,
+  public HttpEngine(OkHttpClient client, Request request,/*RealCall 传入 false*/ boolean bufferRequestBody,
+      /*RealCall 传入false*/boolean callerWritesRequestBody, boolean forWebSocket, StreamAllocation streamAllocation,
       RetryableSink requestBodyOut, Response priorResponse) {
     this.client = client;
     this.userRequest = request;
@@ -283,9 +283,15 @@ public final class HttpEngine {
     // 如果服务器对照客户端给出的时间已经更新了客户端请求的网页，则发送这个更新了的网页给用户。
     boolean success = false;
     try {
+
+      //0. 从Client的connectionPool中找到一个空闲的connection
+      //1. 试图从client的链接池中找到一个健康的链接并返回赋值给httpStream，如果健康的链接，那么就进行下一步
+      //2. 自己创建一个链接（connection），完成tcp的握手
       httpStream = connect();
       httpStream.setHttpEngine(this);
 
+
+      //接下来，按需要写入请求request 的body，注意，到目前为止，从未往socket的输出流写入任何东西
       if (writeRequestHeadersEagerly()) {
         long contentLength = OkHeaders.contentLength(request);
         if (bufferRequestBody) {
@@ -587,6 +593,9 @@ public final class HttpEngine {
   /**
    * Flushes the remaining request header and body, parses the HTTP response headers and starts
    * reading the HTTP response body if it exists.
+   *
+   * 提交请求的request的header和body，尔后解析http的response头和body
+   *
    */
   public void readResponse() throws IOException {
     if (userResponse != null) {
@@ -605,6 +614,8 @@ public final class HttpEngine {
       httpStream.writeRequestHeaders(networkRequest);
       networkResponse = readNetworkResponse();
     } else if (!callerWritesRequestBody) {
+      //这里我就不明白了，因为传入的callerWritesRequestBody为false，那么什么时候调用else?所以一直都只能进这一块?当然，我这里只分析了普通get请求
+      //不过，反正最后都会调用readNetworkResponse();就是了-3-
       networkResponse = new NetworkInterceptorChain(0, networkRequest,
           streamAllocation.connection()).proceed(networkRequest);
     } else {
@@ -644,8 +655,12 @@ public final class HttpEngine {
     receiveHeaders(networkResponse.headers());
 
     // If we have a cache response too, then we're doing a conditional get.
+    //如果这时候我们有缓存，那么这个时候我们做的只是一个conditional get（查询缓存是不是有效）
+    //因为我们系统中有缓存了，说明这个请求是支持缓存的，但是有缓存还需要进行网络查询的话，就只能是conditional get请求了。
     if (cacheResponse != null) {
+      //判断http返回的缓存状态
       if (validate(cacheResponse, networkResponse)) {
+        //缓存可用直接返回了缓存
         userResponse = cacheResponse.newBuilder()
             .request(userRequest)
             .priorResponse(stripBody(priorResponse))
@@ -676,8 +691,8 @@ public final class HttpEngine {
         .build();
 
     if (hasBody(userResponse)) {
-      maybeCache();
-      userResponse = unzip(cacheWritingResponse(storeRequest, userResponse));
+      maybeCache();//这里判断了下可不可以缓存，如果可以缓存，那么就缓存
+      userResponse = unzip(cacheWritingResponse(storeRequest, userResponse));//此处设置最终对用户来说可见的结果
     }
   }
 
@@ -701,9 +716,15 @@ public final class HttpEngine {
       return request;
     }
 
+
+    /*
+    * 在自定义网络拦截器的intercept中，调用NetworkInterceptorChain的proceed(request),进行真正的网络请求(readNetworkResponse)
+    * */
     @Override public Response proceed(Request request) throws IOException {
       calls++;
 
+
+      //以下是拦截器的操作。
       if (index > 0) {
         Interceptor caller = client.networkInterceptors().get(index - 1);
         Address address = connection().route().address();
@@ -740,7 +761,8 @@ public final class HttpEngine {
 
         return interceptedResponse;
       }
-
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      //接下来进行真正的网络请求了。因为我模拟的是http1的请求，所以跟入Http1xStream.writeRequestHeaders();
       httpStream.writeRequestHeaders(request);
 
       //Update the networkRequest with the possibly updated interceptor request.
@@ -753,6 +775,9 @@ public final class HttpEngine {
         bufferedRequestBody.close();
       }
 
+      //这里，把request的header和body发送到目标主机，以上搞了这么久干了如下那么多事情
+      // 0. 获取目标主机端口和ip
+      // 1. 构造请求头和请求主体。
       Response response = readNetworkResponse();
 
       int code = response.code();
@@ -766,8 +791,10 @@ public final class HttpEngine {
   }
 
   private Response readNetworkResponse() throws IOException {
+    //调用流的flush()方法，把请求弄到网络去。
     httpStream.finishRequest();
 
+    //在这里，只是仅仅的读取了response的第一行的状态（例如 ： HTTP/1.1 200 OK），以及response的header
     Response networkResponse = httpStream.readResponseHeaders()
         .request(networkRequest)
         .handshake(streamAllocation.connection().handshake())
@@ -776,6 +803,7 @@ public final class HttpEngine {
         .build();
 
     if (!forWebSocket) {
+      //这里才开始读取body
       networkResponse = networkResponse.newBuilder()
           .body(httpStream.openResponseBody(networkResponse))
           .build();
@@ -918,6 +946,9 @@ public final class HttpEngine {
    * Figures out the HTTP request to make in response to receiving this engine's response. This will
    * either add authentication headers, follow redirects or handle a client request timeout. If a
    * follow-up is either unnecessary or not applicable, this returns null.
+   *
+   * 返回是否有重定向什么的需要继续跟下去的链接，如果没有返回null
+   *
    */
   public Request followUpRequest() throws IOException {
     if (userResponse == null) throw new IllegalStateException();
